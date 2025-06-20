@@ -10,10 +10,9 @@ public class BNode<E> {
     protected int idNode;
     public static int idUnique = 0;
 
-    //Constructor
     /**
-     * Inicializa el nodo con un orden dado.
-     * @param orderNode orden del nodo e indicador de inicializacion.
+     * Constructor que inicializa el nodo con el orden especificado.
+     * @param orderNode orden del nodo (máximo número de claves).
      */
     public BNode(int orderNode) {
         this.keys = new ArrayList<>(orderNode);
@@ -27,13 +26,31 @@ public class BNode<E> {
         this.idNode = BNode.idUnique++;
     }
 
+    /* -> Test
     public ArrayList<E> getKeys() {return this.keys;}
     public ArrayList<BNode<E>> getChilds() {return this.childs;}
+    */
 
-    //Metodos
+    // -> Metodos
+    /**
+     * Verifica si el nodo está lleno.
+     * @param maxKeys número máximo de claves que puede contener el nodo.
+     * @return true si el nodo está lleno, false en caso contrario.
+     */
     public boolean isFull(int maxKeys) {return this.keysCount >= maxKeys;}
+
+    /**
+     * Verifica si el nodo está vacío.
+     * @return true si el nodo no contiene claves, false en caso contrario.
+     */
     public boolean isEmptyNode() {return this.keysCount == 0;}
     
+    /**
+     * Busca una clave dentro del nodo.
+     * @param key clave a buscar.
+     * @param position arreglo que contiene la posición actual de búsqueda.
+     * @return true si la clave se encuentra en el nodo, false en caso contrario.
+     */
     @SuppressWarnings("unchecked")
     public boolean searchNode(E key, int[] position) {
         while (position[0] < this.keysCount && 
