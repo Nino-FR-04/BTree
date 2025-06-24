@@ -13,6 +13,8 @@ public class Main {
         }
 
         System.out.println(btree.search(10));
+        btree.remove(10);
+        System.out.println(btree.search(10));
         System.out.println(btree.getRoot());
         
     }
