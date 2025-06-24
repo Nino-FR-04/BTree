@@ -130,15 +130,17 @@ public class BTree<E extends Comparable<E>> {
 
     private boolean searchRecursive(BNode<E> node, E key) {
         int[] pos = new int[1];
+
         //Caso base: no se encontro la llave en el arbol
+        if(node == null) return false;
+
         if (node.searchKey(key, pos)) {
             System.out.println("Clave " + key + " encontrada en:");
-            System.out.println("Nodo ID: " + node.idNode + " -> " + node.keys.subList(0, node.keysCount));
+            System.out.println("Nodo: " + node);
             System.out.println("Posición: " + pos[0]);
             return true;
         }
 
-        if(node.searchKey(key, pos)) return true;
         return this.searchRecursive(node.childs.get(pos[0]), key);
     }
 
