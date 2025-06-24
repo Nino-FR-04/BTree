@@ -12,16 +12,18 @@ public class BNode<E> {
 
     /**
      * Constructor que inicializa el nodo con el orden especificado.
-     * @param orderNode orden del nodo (máximo número de claves).
+     * @param orderNode orden del nodo.
      */
     public BNode(int orderNode) {
         this.keys = new ArrayList<>(orderNode);
-        this.childs = new ArrayList<>(orderNode + 1);
+        this.childs = new ArrayList<>(orderNode);
         this.keysCount = 0;
-        
-        for(int i=0;i < orderNode;i++) {this.keys.add(null);}
-        for(int i=0;i <= orderNode;i++) {this.childs.add(null);}
-        
+
+        for(int i=0;i < orderNode;i++){
+            this.keys.add(null);
+            this.childs.add(null);
+        }
+
         //Cada que se crea un nodo se le asigna un id unico
         this.idNode = BNode.idUnique++;
     }
@@ -34,7 +36,7 @@ public class BNode<E> {
     // -> Metodos
     /**
      * Verifica si el nodo está lleno.
-     * @param maxKeys número máximo de claves que puede contener el nodo.
+     * @param maxKey maximo de claves por nodo
      * @return true si el nodo está lleno, false en caso contrario.
      */
     public boolean isFull(int maxKeys) {return this.keysCount >= maxKeys;}
@@ -43,7 +45,7 @@ public class BNode<E> {
      * Verifica si el nodo está vacío.
      * @return true si el nodo no contiene claves, false en caso contrario.
      */
-    public boolean isEmptyNode() {return this.keysCount == 0;}
+    public boolean isEmpty() {return this.keysCount == 0;}
     
     /**
      * Busca una clave dentro del nodo.
@@ -52,7 +54,7 @@ public class BNode<E> {
      * @return true si la clave se encuentra en el nodo, false en caso contrario.
      */
     @SuppressWarnings("unchecked")
-    public boolean searchNode(E key, int[] position) {
+    public boolean searchKey(E key, int[] position) {
         while (position[0] < this.keysCount && 
                 ((Comparable<E>) key).compareTo(this.keys.get(position[0])) > 0) {
             
@@ -70,11 +72,12 @@ public class BNode<E> {
     //toString
     @Override
     public String toString() {
+        
         StringBuilder sb = new StringBuilder();
+        
+        if(this.isEmpty()) return "";
+        
         sb.append(this.idNode + "       ");
-
-        if(this.isEmptyNode()) return sb.toString();
-
         sb.append("(");
 
         for(int i=0; i < this.keysCount ;i++) {

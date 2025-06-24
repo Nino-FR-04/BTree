@@ -1,3 +1,4 @@
+package exceptions;
 /**
  * Excepcion que se usa en caso de que se quiera ingresar algun dato nulo
  * en alguna estructura de datos.

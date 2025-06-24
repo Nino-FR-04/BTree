@@ -1,3 +1,5 @@
+package exceptions;
+
 /**
  * Excepcion que se usa en caso de que una estructura de datos
  * este vacia y se quiera hacer una operacionde eliminacion u otra.
