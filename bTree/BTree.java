@@ -1,4 +1,6 @@
 package bTree;
+import java.util.ArrayList;
+
 import exceptions.ExceptionElementNotFound;
 import exceptions.ExceptionIsEmpty;
 import exceptions.ExceptionItemDuplicated;
@@ -196,13 +198,22 @@ public class BTree<E extends Comparable<E>> {
         return this.searchRecursive(node.childs.get(pos[0]), key);
     }
 
+
+    /**
+     * Metodo que permite la eliminacion de una clave ayudandose de
+     * un metodo recursivo.
+     * 
+     * @param key clave a eliminar en el arbol
+     * @throws ExceptionIsEmpty si el arbol se encuentra vacio
+     * @throws ExceptionElementNotFound si la clave no fue encontrada
+     */
     public void remove(E key) throws ExceptionIsEmpty,ExceptionElementNotFound {
         
         if(this.isEmpty()) {
             throw new ExceptionIsEmpty("El arbol esta vacio");
         }
 
-        removeRecursive(this.root, key);
+        this.removeRecursive(this.root, key);
 
         // Si después de eliminar, la raíz queda sin claves, ajustamos la raíz
         if (this.root != null && this.root.keysCount == 0) {
@@ -210,7 +221,17 @@ public class BTree<E extends Comparable<E>> {
         }
     }
 
+    /**
+     * Este metodo permite la eliminacion de una clave de manera recursiva, es apoyo
+     * del metodo principal.
+     * 
+     * @param node nodo en el que se realiza el proceso de eliminacion
+     * @param key clave a remover recursivamente en el arbol
+     * @throws ExceptionElementNotFound si la clave no se encontro en el arbol
+     * 
+     */
     private void removeRecursive(BNode<E> node, E key) throws ExceptionElementNotFound {
+        //Arreglo que permite hacer un seguimiento a la posicion de la clave
         int[] pos = new int[1];
 
         if (node == null) { // Llegamos a un hijo nulo sin encontrar la clave
@@ -219,36 +240,68 @@ public class BTree<E extends Comparable<E>> {
 
         boolean found = node.searchKey(key, pos);
 
-        if (found) { // Clave encontrada
-            if (node.childs.get(0) == null) { // Es una hoja
-                removeKeyFromNode(node, pos[0]);
-            } else { // Nodo interno
-                replaceWithPredecessor(node, pos[0]);
+        //Si la clave fue encontrada en el nodo actual hay dos subcasos.
+        if (found) { 
+            //El nodo en el que se encuentra es hoja(se llama a un metodo encargado de la eliminacion en nodo hoja)
+            if (node.childs.get(0) == null) {
+                this.removeKeyFromNode(node, pos[0]);
+            //El nodo es un nodo interno(se llama al emtodo que se encarga de buscar el predecesor y eliminar la clave repetida)
+            } else {
+                this.replaceWithPredecessor(node, pos[0]);
             }
-        } else { // La clave no está en este nodo
-            if (node.childs.get(pos[0]) == null) { // Llegaste a un hijo nulo
+        
+        //La clave no fue encontrada en el nodo
+        } else {
+            //Se llego a un hijo hoja
+            if (node.childs.get(pos[0]) == null) { 
                 throw new ExceptionElementNotFound("La clave " + key + " no existe en el árbol.");
             }
 
-            removeRecursive(node.childs.get(pos[0]), key);
+            /*
+            Si no se llego a un nodo no hoja se llama al mismo metodo recursivamente
+            para buscar la clave en su hijo en la posicion: pos[0]
+            */
+            this.removeRecursive(node.childs.get(pos[0]), key);
 
             // Verificar subdesbordamiento
+            /*
+             * Despues de realizar la eliminacion puede que ocurra un subdesbordamiento.
+             * Hay desbordamiento cuando el numero de claves es menor al {orden del arbol - 1 / 2}
+             */
             if (node.childs.get(pos[0]).keysCount < (this.treeOrder - 1) / 2) {
-                fixUnderflow(node, pos[0]);
+                this.fixUnderflow(node, pos[0]);
             }
         }
     }
 
+    /**
+     * Este metodo se encarga de eliminar la clave en un nodo hoja.
+     * Desplaza la posicion de las claves desde la posicion de la clve a eliminar hasta
+     * el ultimo elemento del arreglo de claves.
+     * 
+     * @param node nodo en el que se va a remover la clave
+     * @param pos posicion de la clave a eliminar
+     * 
+     */
     private void removeKeyFromNode(BNode<E> node, int pos) {
         for (int i = pos; i < node.keysCount - 1; i++) {
             node.keys.set(i, node.keys.get(i + 1));
             node.childs.set(i + 1, node.childs.get(i + 2));
         }
-        node.keys.set(node.keysCount - 1, null);
+        node.keys.set(node.keysCount - 1, null); //Se establece el valor repetido como nulL
         node.childs.set(node.keysCount, null);
         node.keysCount--;
     }
 
+    /**
+     * Este metodo ayuda en la eliminacion de una clve en un nodo interno(nodo no hoja)
+     * Busca el predecesor inOrden y realiza el reemplazo correspondiente.
+     * Luego llama al metodo removeRecursive para la eliminacion de la clave repetida. 
+     * 
+     * @param node nodo que contiene la clave a eliminar
+     * @param pos posicion de la clave en el arreglo de claves de {@code node}
+     * 
+     */
     private void replaceWithPredecessor(BNode<E> node, int pos) {
         BNode<E> predNode = node.childs.get(pos);
         while (predNode.childs.get(predNode.keysCount) != null) {
@@ -257,31 +310,56 @@ public class BTree<E extends Comparable<E>> {
 
         E predKey = predNode.keys.get(predNode.keysCount - 1);
         node.keys.set(pos, predKey);
-        removeRecursive(node.childs.get(pos), predKey);
+        this.removeRecursive(node.childs.get(pos), predKey);
     }
 
+    /**
+     * Metodo encargado de corregir el underFlow que ocurre en un nodo donde
+     * se elimino una clave.
+     * 
+     * @param parent nodo padre (nodo actual en el metodo removeRecursive)
+     * @param posChild posicion donde se encuentra el hijo donde ocurre el underFlow
+     * 
+     */
     private void fixUnderflow(BNode<E> parent, int posChild) {
         // Intentar redistribuir con hermano izquierdo
+        /*
+         * poschild indica el indice: si este es mayor a 0 es porque hay un hermano izquierdo
+         * ademas se verifica que este hermano tengo mas de las clves minimas por nodo.
+         */
         if (posChild > 0 && parent.childs.get(posChild - 1).keysCount > (this.treeOrder - 1) / 2) {
-            redistributeLeft(parent, posChild);
+            this.redistributeLeft(parent, posChild);
         }
         // Intentar redistribuir con hermano derecho
+        /*
+         * La condicion indica que: existe un hermano derecho (porque no es el último hijo).
+         */
         else if (posChild < parent.keysCount && parent.childs.get(posChild + 1).keysCount > (this.treeOrder - 1) / 2) {
-            redistributeRight(parent, posChild);
+            this.redistributeRight(parent, posChild);
         }
         // Si no es posible redistribuir, fusionar
         else if (posChild > 0) { // Fusionar con el hermano izquierdo
-            mergeNodes(parent, posChild - 1);
+            this.mergeNodes(parent, posChild - 1);
         } else { // Fusionar con el hermano derecho
-            mergeNodes(parent, posChild);
+            this.mergeNodes(parent, posChild);
         }
     }
 
+    /**
+     * Metodo que se encarga de la redistribucion izquierda de las llaves
+     * 
+     * @param parent nodo padre con el cual se va a trabajar la distribucion
+     * @param posChild posicion del hijo derecho
+     */
     private void redistributeLeft(BNode<E> parent, int posChild) {
         BNode<E> leftSibling = parent.childs.get(posChild - 1);
         BNode<E> child = parent.childs.get(posChild);
 
         // Mover clave del padre al hijo
+        /*
+         * se mueven las claves e hijos en el hijo [poschild] una posicion hacia la derecha
+         * para que la clave del padre sea la que se inserte 
+         */
         for (int i = child.keysCount - 1; i >= 0; i--) {
             child.keys.set(i + 1, child.keys.get(i));
         }
@@ -289,17 +367,31 @@ public class BTree<E extends Comparable<E>> {
             child.childs.set(i + 1, child.childs.get(i));
         }
 
+        /*
+         * Se "baja" una clave del parent al hijo
+         * El hijo también hereda un hijo del leftSibling
+         */
         child.keys.set(0, parent.keys.get(posChild - 1));
         child.childs.set(0, leftSibling.childs.get(leftSibling.keysCount));
         child.keysCount++;
 
         // Mover clave del hermano al padre
+        /*
+         * Se "sube" la clave más a la derecha del leftSibling al parent
+         * Se actualiza el leftSibling limpiando lo movido
+         */
         parent.keys.set(posChild - 1, leftSibling.keys.get(leftSibling.keysCount - 1));
         leftSibling.keys.set(leftSibling.keysCount - 1, null);
         leftSibling.childs.set(leftSibling.keysCount, null);
         leftSibling.keysCount--;
     }
 
+    /**
+     * Metodo que se encarga de la redistribucion derecha de las llaves
+     * 
+     * @param parent nodo padre con el cual se va a trabajar la distribucion
+     * @param posChild posicion del hijo izquierdo
+     */
     private void redistributeRight(BNode<E> parent, int posChild) {
         BNode<E> rightSibling = parent.childs.get(posChild + 1);
         BNode<E> child = parent.childs.get(posChild);
@@ -321,6 +413,13 @@ public class BTree<E extends Comparable<E>> {
         rightSibling.keysCount--;
     }
 
+    /**
+     * Fusiona dos nodos hijos de un nodo padre en la posición dada.
+     * 
+     * @param parent nodo padre con el cual se va a trabajar la fusion de los nodos
+     * @param posChild La posición del hijo izquierdo en parent.childs. El hijo derecho estará en posChild + 1.
+     * 
+     */
     private void mergeNodes(BNode<E> parent, int posChild) {
         BNode<E> leftChild = parent.childs.get(posChild);
         BNode<E> rightChild = parent.childs.get(posChild + 1);
@@ -329,20 +428,84 @@ public class BTree<E extends Comparable<E>> {
         leftChild.childs.set(leftChild.keysCount + 1, rightChild.childs.get(0));
         leftChild.keysCount++;
 
+        /*
+         * Se copian las claves e hijos del nodo derecho hacia el izaquierdo
+         */
         for (int i = 0; i < rightChild.keysCount; i++) {
             leftChild.keys.set(leftChild.keysCount, rightChild.keys.get(i));
             leftChild.childs.set(leftChild.keysCount + 1, rightChild.childs.get(i + 1));
             leftChild.keysCount++;
         }
 
-        // Eliminar clave del padre
+        /*
+        Eliminar clave del padre, espacio que dejo al mover la clve del padre
+        al hijo izquierdo
+        */ 
         for (int i = posChild; i < parent.keysCount - 1; i++) {
             parent.keys.set(i, parent.keys.get(i + 1));
             parent.childs.set(i + 1, parent.childs.get(i + 2));
         }
 
+        //Se limpian lo valores con null desbido al desplazamiento
         parent.keys.set(parent.keysCount - 1, null);
         parent.childs.set(parent.keysCount, null);
         parent.keysCount--;
+    }
+
+    @Override
+    public String toString() {
+        if (this.isEmpty()) {
+            return "El árbol está vacío";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(String.format("%-8s%-20s%-12s%-12s\n", 
+                "Id.Nodo", "Claves Nodo", "Id.Padre", "Id.Hijos"));
+        writeTree(this.root, null, sb);
+        return sb.toString();
+    }
+
+    private void writeTree(BNode<E> node, BNode<E> parent, StringBuilder sb) {
+        if (node == null || node.isEmpty()) return;
+
+        // Id del nodo
+        sb.append(String.format("%-8d", node.idNode));
+
+        // Claves del nodo
+        StringBuilder claves = new StringBuilder("(");
+        for (int i = 0; i < node.keysCount; i++) {
+            claves.append(node.keys.get(i));
+            if (i < node.keysCount - 1) claves.append(", ");
+        }
+        claves.append(")");
+        sb.append(String.format("%-20s", claves.toString()));
+
+        // Id del padre
+        if (parent == null) {
+            sb.append(String.format("%-12s", "--"));
+        } else {
+            sb.append(String.format("%-12d", parent.idNode));
+        }
+
+        // Ids de hijos
+        ArrayList<Integer> hijosIds = new ArrayList<>();
+        for (BNode<E> child : node.childs) {
+            if (child != null && !child.isEmpty()) {
+                hijosIds.add(child.idNode);
+            }
+        }
+
+        if (hijosIds.isEmpty()) {
+            sb.append(String.format("%-12s\n", "--"));
+        } else {
+            sb.append(String.format("%-12s\n", hijosIds.toString()));
+        }
+
+        // Llamada recursiva a los hijos
+        for (BNode<E> child : node.childs) {
+            if (child != null && !child.isEmpty()) {
+                writeTree(child, node, sb);
+            }
+        }
     }
 }
